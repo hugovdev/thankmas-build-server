@@ -4,6 +4,7 @@ import me.hugo.thankmas.ThankmasPlugin
 import me.hugo.thankmasbuildserver.command.PushMapCommand
 import revxrsal.commands.bukkit.BukkitCommandHandler
 
+
 public class ThankmasBuildServer : ThankmasPlugin(listOf("build_server")) {
 
     private lateinit var commandHandler: BukkitCommandHandler
@@ -25,6 +26,11 @@ public class ThankmasBuildServer : ThankmasPlugin(listOf("build_server")) {
         instance = this
 
         commandHandler = BukkitCommandHandler.create(this)
+
+        commandHandler.autoCompleter.registerSuggestion("pushableWorlds") { _, _, _ ->
+            configProvider.getOrLoad("build_server/scoped_worlds.yml").getKeys(false)
+        }
+
         commandHandler.register(PushMapCommand())
         commandHandler.registerBrigadier()
     }
