@@ -3,6 +3,7 @@ package me.hugo.thankmasbuildserver
 import me.hugo.thankmas.ThankmasPlugin
 import me.hugo.thankmasbuildserver.command.PushMapCommand
 import revxrsal.commands.bukkit.BukkitCommandHandler
+import revxrsal.commands.ktx.SuspendFunctionsSupport
 
 
 public class ThankmasBuildServer : ThankmasPlugin(listOf("build_server")) {
@@ -26,6 +27,7 @@ public class ThankmasBuildServer : ThankmasPlugin(listOf("build_server")) {
         instance = this
 
         commandHandler = BukkitCommandHandler.create(this)
+        commandHandler.accept(SuspendFunctionsSupport)
 
         commandHandler.autoCompleter.registerSuggestion("pushableWorlds") { _, _, _ ->
             configProvider.getOrLoad("build_server/scoped_worlds.yml").getKeys(false)
