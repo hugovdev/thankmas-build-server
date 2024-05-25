@@ -4,20 +4,17 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dev.kezz.miniphrase.audience.sendTranslated
 import me.hugo.thankmas.config.ConfigurationProvider
+import me.hugo.thankmas.git.GitFileAction
+import me.hugo.thankmas.git.GitFileChange
 import me.hugo.thankmas.git.GitHubHelper
 import me.hugo.thankmas.lang.TranslatedComponent
-import me.hugo.thankmas.player.player
-import me.hugo.thankmas.player.translate
 import me.hugo.thankmasbuildserver.ThankmasBuildServer
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
 import org.bukkit.scheduler.BukkitRunnable
 import org.koin.core.component.inject
-import revxrsal.commands.annotation.AutoComplete
-import revxrsal.commands.annotation.Command
-import revxrsal.commands.annotation.DefaultFor
+import revxrsal.commands.annotation.*
 import revxrsal.commands.annotation.Optional
-import revxrsal.commands.annotation.Subcommand
 import revxrsal.commands.bukkit.annotation.CommandPermission
 import java.io.File
 import java.nio.file.Files
@@ -68,7 +65,6 @@ public class PushMapCommand : TranslatedComponent {
         @Optional commitMessage: String =
             "[$world] World Update - ${SimpleDateFormat("dd/MM/yyyy, HH:mm:ss").format(Date())}"
     ) {
-
         if (world in beingPushed) {
             sender.sendTranslated("maps.error.already_pushing")
             return
@@ -76,7 +72,7 @@ public class PushMapCommand : TranslatedComponent {
 
         val gitConfig = configProvider.getOrResources("git.yml", "base")
 
-        if (gitConfig.getString("access-token") == null || gitConfig.getString("github-api-url") == null) {
+        if (gitConfig.getString("access-token") == null) {
             sender.sendTranslated("maps.error.no_git")
             return
         }
@@ -88,12 +84,14 @@ public class PushMapCommand : TranslatedComponent {
             return
         }
 
-        val scopeDirectory = configProvider.getOrLoad("build_server/scoped_worlds.yml").getString(world)
+        var scopeDirectory = configProvider.getOrLoad("build_server/scoped_worlds.yml").getString(world)
 
         if (scopeDirectory == null) {
             sender.sendTranslated("maps.error.not_scoped")
             return
         }
+
+        scopeDirectory = "scopes/$scopeDirectory"
 
         sender.sendTranslated("maps.saving") {
             parsed("map", world)
@@ -103,7 +101,7 @@ public class PushMapCommand : TranslatedComponent {
         // Save the world before the push!
         bukkitWorld.save()
 
-        val worldPath = Bukkit.getWorldContainer().resolve(world)
+        val worldPath = bukkitWorld.worldFolder
 
         sender.sendTranslated("maps.pushing") {
             parsed("map", world)
@@ -116,7 +114,7 @@ public class PushMapCommand : TranslatedComponent {
 
         object : BukkitRunnable() {
             override fun run() {
-                pushWorld(sender.uniqueId, worldPath, scopeDirectory, commitMessage) {
+                pushWorld(worldPath, scopeDirectory, commitMessage) {
                     sender.sendTranslated("maps.success") {
                         parsed("map", world)
                         parsed("scope", scopeDirectory)
@@ -129,17 +127,14 @@ public class PushMapCommand : TranslatedComponent {
     }
 
     private fun pushWorld(
-        sender: UUID,
         originalPath: File,
         scopeDirectory: String,
         commitName: String,
         onSuccess: () -> Unit
     ) {
-        // data/raids -> CHANGED
-        // region/mc.whatever -> DELETED
-        val changes: MutableList<FileChange> = mutableListOf()
+        val changes: MutableList<GitFileChange> = mutableListOf()
 
-        fun checkDirectory(localPath: File, remoteFileList: JsonArray, scopeDirectory: String) {
+        fun checkDirectory(localPath: File, remoteFileList: JsonArray, remoteDirectory: String) {
             localPath.listFiles()?.forEach { localFile ->
                 val currentFileName = localFile.name
 
@@ -153,18 +148,18 @@ public class PushMapCommand : TranslatedComponent {
                     checkDirectory(
                         localFile,
                         if (remoteMatch?.get("type")?.asString == "dir")
-                            gitHubHelper.fetchScope("$scopeDirectory/$currentFileName")
+                            gitHubHelper.fetchRemoteDirectory("$remoteDirectory/$currentFileName")
                         else JsonArray(),
-                        "$scopeDirectory/$currentFileName"
+                        "$remoteDirectory/$currentFileName"
                     )
 
                     return@forEach
                 }
 
                 // If the file is not a directory we update it or create it.
-                changes += FileChange(
-                    "${originalPath.toPath().relativize(localPath.toPath()).resolve(currentFileName)}",
-                    FileAction.CREATE_OR_CHANGE,
+                changes += GitFileChange(
+                    "$remoteDirectory/$currentFileName",
+                    if (remoteMatch == null) GitFileAction.CREATE else GitFileAction.UPDATE,
                     remoteMatch?.get("sha")?.asString,
                     Base64.getEncoder().encodeToString(Files.readAllBytes(localFile.toPath()))
                 )
@@ -173,38 +168,16 @@ public class PushMapCommand : TranslatedComponent {
             // Files on remote but not on local get removed.
             remoteFileList.map { it.asJsonObject }
                 .filter { !localPath.resolve(it.get("name").asString).exists() }.forEach {
-                    changes += FileChange(
-                        "${originalPath.toPath().relativize(localPath.toPath()).resolve(it.get("name").asString)}",
-                        FileAction.DELETE,
+                    changes += GitFileChange(
+                        "$remoteDirectory/${it.get("name").asString}",
+                        GitFileAction.DELETE,
                         it.get("sha").asString
                     )
                 }
         }
 
-        checkDirectory(originalPath, gitHubHelper.fetchScope(scopeDirectory).asJsonArray, scopeDirectory)
-
-        changes.forEachIndexed { index, fileChange ->
-            if (fileChange.action == FileAction.DELETE) gitHubHelper.deleteFile(
-                "$scopeDirectory/${fileChange.relativePath}",
-                "$commitName - DELETE ${fileChange.relativePath}",
-                fileChange.sha!!
-            ) else {
-                gitHubHelper.pushFileChange(
-                    "$scopeDirectory/${fileChange.relativePath}",
-                    fileChange.newValue!!,
-                    "$commitName - CHANGE/CREATE ${fileChange.relativePath}",
-                    fileChange.sha
-                )
-            }
-
-            sender.player()?.let {
-                it.sendActionBar(it.translate("maps.progress") {
-                    parsed("index", index + 1)
-                    parsed("changes", changes.size)
-                    parsed("file", fileChange.relativePath)
-                })
-            }
-        }
+        checkDirectory(originalPath, gitHubHelper.fetchRemoteDirectory(scopeDirectory).asJsonArray, scopeDirectory)
+        gitHubHelper.pushFileChanges(changes, commitName)
 
         object : BukkitRunnable() {
             override fun run() {
@@ -213,22 +186,4 @@ public class PushMapCommand : TranslatedComponent {
             }
         }.runTask(ThankmasBuildServer.instance())
     }
-
-    private enum class FileAction {
-        CREATE_OR_CHANGE, DELETE;
-    }
-
-    private data class FileChange(
-        val relativePath: String,
-        val action: FileAction,
-
-        // Required when updating a file:
-        val sha: String? = null,
-        val newValue: String? = null
-    ) {
-        init {
-            ThankmasBuildServer.instance().logger.info("[$action] to file $relativePath")
-        }
-    }
-
 }
