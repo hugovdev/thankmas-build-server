@@ -2,6 +2,8 @@ package me.hugo.thankmasbuildserver
 
 import me.hugo.thankmas.ThankmasPlugin
 import me.hugo.thankmasbuildserver.command.PushMapCommand
+import me.hugo.thankmasbuildserver.listener.DripleafControl
+import org.bukkit.Bukkit
 import revxrsal.commands.bukkit.BukkitCommandHandler
 import revxrsal.commands.ktx.SuspendFunctionsSupport
 
@@ -25,6 +27,8 @@ public class ThankmasBuildServer : ThankmasPlugin(listOf("build_server")) {
         super.onEnable()
 
         instance = this
+
+        Bukkit.getPluginManager().registerEvents(DripleafControl(), this)
 
         commandHandler = BukkitCommandHandler.create(this)
         commandHandler.accept(SuspendFunctionsSupport)
