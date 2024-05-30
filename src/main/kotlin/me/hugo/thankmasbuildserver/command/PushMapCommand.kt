@@ -1,8 +1,9 @@
 package me.hugo.thankmasbuildserver.command
 
+import aws.sdk.kotlin.services.s3.model.S3Exception
 import dev.kezz.miniphrase.audience.sendTranslated
-import kotlinx.coroutines.runBlocking
 import me.hugo.thankmas.config.ConfigurationProvider
+import me.hugo.thankmas.coroutines.runBlockingMine
 import me.hugo.thankmas.lang.TranslatedComponent
 import me.hugo.thankmas.world.s3.S3WorldSynchronizer
 import me.hugo.thankmasbuildserver.ThankmasBuildServer
@@ -105,20 +106,29 @@ public class PushMapCommand : TranslatedComponent {
 
         object : BukkitRunnable() {
             override fun run() {
-                runBlocking {
-                    s3WorldSynchronizer.uploadWorld(bukkitWorld, scopeDirectory)
+                runBlockingMine {
+                    try {
+                        s3WorldSynchronizer.uploadWorld(bukkitWorld, scopeDirectory)
 
-                    object : BukkitRunnable() {
-                        override fun run() {
-                            sender.sendTranslated("maps.success") {
-                                parsed("map", world)
-                                parsed("scope", scopeDirectory)
+                        object : BukkitRunnable() {
+                            override fun run() {
+                                sender.sendTranslated("maps.success") {
+                                    parsed("map", world)
+                                    parsed("scope", scopeDirectory)
+                                }
+
+                                beingPushed.remove(world)
+                                logger.info("Push of map $scopeDirectory has succeeded!")
                             }
-
-                            beingPushed.remove(world)
-                            logger.info("Push of map $scopeDirectory has succeeded!")
+                        }.runTask(ThankmasBuildServer.instance())
+                    } catch (exception: S3Exception) {
+                        sender.sendTranslated("maps.error.other") {
+                            parsed("map", world)
+                            parsed("scope", scopeDirectory)
                         }
-                    }.runTask(ThankmasBuildServer.instance())
+
+                        exception.printStackTrace()
+                    }
                 }
             }
         }.runTaskAsynchronously(ThankmasBuildServer.instance())

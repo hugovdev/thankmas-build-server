@@ -4,9 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e398343f-c4cd-44e6-b0e7-b146948c6f89" name="Changes" comment="Update push command to use git optimizations">
+    <list default="true" id="e398343f-c4cd-44e6-b0e7-b146948c6f89" name="Changes" comment="Update push command to use Amazon S3 storage">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/me/hugo/thankmasbuildserver/ThankmasBuildServer.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/me/hugo/thankmasbuildserver/ThankmasBuildServer.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/kotlin/me/hugo/thankmasbuildserver/command/PushMapCommand.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/me/hugo/thankmasbuildserver/command/PushMapCommand.kt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -206,13 +205,22 @@
       <option name="project" value="LOCAL" />
       <updated>1716643341348</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="Update push command to use Amazon S3 storage">
+      <option name="closed" value="true" />
+      <created>1716679436336</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1716679436336</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Thankmas build server plugin!" />
     <MESSAGE value="Make a great /maps command" />
     <MESSAGE value="Update push command to use git optimizations" />
-    <option name="LAST_COMMIT_MESSAGE" value="Update push command to use git optimizations" />
+    <MESSAGE value="Update push command to use Amazon S3 storage" />
+    <option name="LAST_COMMIT_MESSAGE" value="Update push command to use Amazon S3 storage" />
   </component>
 </project>
