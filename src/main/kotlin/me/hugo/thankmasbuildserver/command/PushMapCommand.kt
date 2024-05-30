@@ -127,6 +127,8 @@ public class PushMapCommand : TranslatedComponent {
                             parsed("scope", scopeDirectory)
                         }
 
+                        beingPushed -= world
+
                         exception.printStackTrace()
                     }
                 }
