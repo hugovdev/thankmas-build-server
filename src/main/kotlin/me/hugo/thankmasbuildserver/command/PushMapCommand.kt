@@ -10,11 +10,8 @@ import org.bukkit.entity.Player
 import org.bukkit.scheduler.BukkitRunnable
 import org.koin.core.component.inject
 import revxrsal.commands.annotation.*
-import revxrsal.commands.annotation.Optional
 import revxrsal.commands.bukkit.annotation.CommandPermission
 import software.amazon.awssdk.services.s3.model.S3Exception
-import java.text.SimpleDateFormat
-import java.util.*
 
 /**
  * Command that allows players to push a map to the GitHub scopes
@@ -54,12 +51,7 @@ public class PushMapCommand : TranslatedComponent {
 
     @Subcommand("push")
     @AutoComplete("@pushableWorlds *")
-    private fun pushMap(
-        sender: Player,
-        @Optional world: String = sender.world.name,
-        @Optional commitMessage: String =
-            "[$world] World Update - ${SimpleDateFormat("dd/MM/yyyy, HH:mm:ss").format(Date())}"
-    ) {
+    private fun pushMap(sender: Player, @Optional world: String = sender.world.name) {
         if (world in beingPushed) {
             sender.sendTranslated("maps.error.already_pushing")
             return
