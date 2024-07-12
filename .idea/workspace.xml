@@ -4,10 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e398343f-c4cd-44e6-b0e7-b146948c6f89" name="Changes" comment="Catch silly S3Exceptions better">
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/me/hugo/thankmasbuildserver/listener/DripleafControl.kt" afterDir="false" />
+    <list default="true" id="e398343f-c4cd-44e6-b0e7-b146948c6f89" name="Changes" comment="Control dripleafs :D">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/me/hugo/thankmasbuildserver/ThankmasBuildServer.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/me/hugo/thankmasbuildserver/ThankmasBuildServer.kt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -35,19 +33,7 @@
               <path>
                 <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
                 <item name="ThankmasBuildServer" type="f1a62948:ProjectNode" />
-                <item name="Tasks" type="e4a08cd1:TasksNode" />
-              </path>
-              <path>
-                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
-                <item name="ThankmasBuildServer" type="f1a62948:ProjectNode" />
-                <item name="Tasks" type="e4a08cd1:TasksNode" />
-                <item name="build" type="c8890929:TasksNode$1" />
-              </path>
-              <path>
-                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
-                <item name="ThankmasBuildServer" type="f1a62948:ProjectNode" />
-                <item name="Tasks" type="e4a08cd1:TasksNode" />
-                <item name="shadow" type="c8890929:TasksNode$1" />
+                <item name="Run Configurations" type="7b0102dc:RunConfigurationsNode" />
               </path>
             </expand>
             <select />
@@ -230,7 +216,15 @@
       <option name="project" value="LOCAL" />
       <updated>1717103005152</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="Control dripleafs :D">
+      <option name="closed" value="true" />
+      <created>1717106399802</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1717106399802</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -240,6 +234,7 @@
     <MESSAGE value="Update push command to use Amazon S3 storage" />
     <MESSAGE value="Catch silly S3Exceptions" />
     <MESSAGE value="Catch silly S3Exceptions better" />
-    <option name="LAST_COMMIT_MESSAGE" value="Catch silly S3Exceptions better" />
+    <MESSAGE value="Control dripleafs :D" />
+    <option name="LAST_COMMIT_MESSAGE" value="Control dripleafs :D" />
   </component>
 </project>

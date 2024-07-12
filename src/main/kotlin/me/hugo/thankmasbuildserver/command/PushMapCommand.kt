@@ -1,9 +1,7 @@
 package me.hugo.thankmasbuildserver.command
 
-import aws.sdk.kotlin.services.s3.model.S3Exception
 import dev.kezz.miniphrase.audience.sendTranslated
 import me.hugo.thankmas.config.ConfigurationProvider
-import me.hugo.thankmas.coroutines.runBlockingMine
 import me.hugo.thankmas.lang.TranslatedComponent
 import me.hugo.thankmas.world.s3.S3WorldSynchronizer
 import me.hugo.thankmasbuildserver.ThankmasBuildServer
@@ -14,6 +12,7 @@ import org.koin.core.component.inject
 import revxrsal.commands.annotation.*
 import revxrsal.commands.annotation.Optional
 import revxrsal.commands.bukkit.annotation.CommandPermission
+import software.amazon.awssdk.services.s3.model.S3Exception
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -106,31 +105,29 @@ public class PushMapCommand : TranslatedComponent {
 
         object : BukkitRunnable() {
             override fun run() {
-                runBlockingMine {
-                    try {
-                        s3WorldSynchronizer.uploadWorld(bukkitWorld, scopeDirectory)
+                try {
+                    s3WorldSynchronizer.uploadWorld(bukkitWorld, scopeDirectory)
 
-                        object : BukkitRunnable() {
-                            override fun run() {
-                                sender.sendTranslated("maps.success") {
-                                    parsed("map", world)
-                                    parsed("scope", scopeDirectory)
-                                }
-
-                                beingPushed.remove(world)
-                                logger.info("Push of map $scopeDirectory has succeeded!")
+                    object : BukkitRunnable() {
+                        override fun run() {
+                            sender.sendTranslated("maps.success") {
+                                parsed("map", world)
+                                parsed("scope", scopeDirectory)
                             }
-                        }.runTask(ThankmasBuildServer.instance())
-                    } catch (exception: S3Exception) {
-                        sender.sendTranslated("maps.error.other") {
-                            parsed("map", world)
-                            parsed("scope", scopeDirectory)
+
+                            beingPushed.remove(world)
+                            logger.info("Push of map $scopeDirectory has succeeded!")
                         }
-
-                        beingPushed -= world
-
-                        exception.printStackTrace()
+                    }.runTask(ThankmasBuildServer.instance())
+                } catch (exception: S3Exception) {
+                    sender.sendTranslated("maps.error.other") {
+                        parsed("map", world)
+                        parsed("scope", scopeDirectory)
                     }
+
+                    beingPushed -= world
+
+                    exception.printStackTrace()
                 }
             }
         }.runTaskAsynchronously(ThankmasBuildServer.instance())
