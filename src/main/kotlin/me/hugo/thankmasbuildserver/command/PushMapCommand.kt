@@ -57,13 +57,6 @@ public class PushMapCommand : TranslatedComponent {
             return
         }
 
-        val gitConfig = configProvider.getOrResources("git.yml", "base")
-
-        if (gitConfig.getString("access-token") == null) {
-            sender.sendTranslated("maps.error.no_git")
-            return
-        }
-
         val bukkitWorld = Bukkit.getWorld(world)
 
         if (bukkitWorld == null) {
@@ -93,7 +86,7 @@ public class PushMapCommand : TranslatedComponent {
 
         logger.info("Started pushing the map $world to $scopeDirectory.")
 
-        beingPushed.add(world)
+        beingPushed += world
 
         object : BukkitRunnable() {
             override fun run() {
@@ -107,7 +100,7 @@ public class PushMapCommand : TranslatedComponent {
                                 parsed("scope", scopeDirectory)
                             }
 
-                            beingPushed.remove(world)
+                            beingPushed -= world
                             logger.info("Push of map $scopeDirectory has succeeded!")
                         }
                     }.runTask(ThankmasBuildServer.instance())
@@ -118,7 +111,6 @@ public class PushMapCommand : TranslatedComponent {
                     }
 
                     beingPushed -= world
-
                     exception.printStackTrace()
                 }
             }
