@@ -8,7 +8,6 @@ plugins {
 group = "me.hugo.thankmasbuildserver"
 version = "1.0-SNAPSHOT"
 
-val exposedVersion: String by project
 dependencies {
     paperweight.paperDevBundle(libs.versions.paper)
 
