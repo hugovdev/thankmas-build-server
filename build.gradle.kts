@@ -1,18 +1,11 @@
 plugins {
-    kotlin("jvm") version "1.9.21"
-    id("com.google.devtools.ksp") version "1.9.21-1.0.15"
-    id("com.github.johnrengelman.shadow") version "8.1.1"
+    kotlin("jvm")
+    id("com.google.devtools.ksp")
+    id("com.github.johnrengelman.shadow")
 }
 
 group = "me.hugo.thankmasbuildserver"
 version = "1.0-SNAPSHOT"
-
-repositories {
-    mavenCentral()
-
-    maven(url = "https://jitpack.io")
-    maven(url = "https://repo.papermc.io/repository/maven-public/")
-}
 
 val exposedVersion: String by project
 dependencies {
@@ -22,7 +15,7 @@ dependencies {
     ksp("io.insert-koin:koin-ksp-compiler:1.3.1")
 
     // Work on a paper specific library!
-    implementation(files("C:/Users/hugov/IdeaProjects/ThankmasPaper/build/libs/ThankmasPaper-1.0-SNAPSHOT.jar"))
+    implementation(project(":common-paper"))
 }
 
 tasks.shadowJar {
