@@ -76,8 +76,8 @@ public class PushMapCommand : TranslatedComponent {
             parsed("scope", scopeDirectory)
         }
 
-        // Save the world before the push!
-        bukkitWorld.save()
+        // Save the world with flush before the push!
+        s3WorldSynchronizer.saveWorldWithFlush(bukkitWorld)
 
         sender.sendTranslated("maps.pushing") {
             parsed("map", world)
