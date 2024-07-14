@@ -16,10 +16,8 @@ public class ThankmasBuildServer : ThankmasPlugin(listOf("build_server")) {
         private var instance: ThankmasBuildServer? = null
 
         public fun instance(): ThankmasBuildServer {
-            val instance = instance
-            requireNotNull(instance) { "Tried to fetch a ThankmasPlugin instance while it's null!" }
-
-            return instance
+            return requireNotNull(instance)
+            { "Tried to fetch a ThankmasPlugin instance while it's null!" }
         }
     }
 
