@@ -16,10 +16,3 @@ dependencies {
     // Work on a paper specific library!
     implementation(project(":common-paper"))
 }
-
-tasks.compileKotlin {
-    compilerOptions {
-        javaParameters = true
-        freeCompilerArgs.add("-Xcontext-receivers")
-    }
-}
