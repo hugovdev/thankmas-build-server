@@ -12,6 +12,9 @@ dependencies {
 
     ksp(libs.koin.ksp.compiler)
 
+    compileOnly(libs.aswm)
+    compileOnly(libs.aswm.loaders)
+
     // Work on a paper specific library!
     implementation(project(":common-paper"))
 }

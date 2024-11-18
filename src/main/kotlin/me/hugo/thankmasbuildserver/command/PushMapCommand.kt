@@ -1,13 +1,15 @@
 package me.hugo.thankmasbuildserver.command
 
+import com.infernalsuite.aswm.api.AdvancedSlimePaperAPI
 import dev.kezz.miniphrase.audience.sendTranslated
 import me.hugo.thankmas.config.ConfigurationProvider
 import me.hugo.thankmas.lang.TranslatedComponent
+import me.hugo.thankmas.world.SlimeWorldRegistry
 import me.hugo.thankmas.world.s3.S3WorldSynchronizer
 import me.hugo.thankmasbuildserver.ThankmasBuildServer
 import org.bukkit.Bukkit
+import org.bukkit.WorldCreator
 import org.bukkit.entity.Player
-import org.bukkit.scheduler.BukkitRunnable
 import org.koin.core.component.inject
 import revxrsal.commands.annotation.*
 import revxrsal.commands.bukkit.annotation.CommandPermission
@@ -23,6 +25,8 @@ public class PushMapCommand : TranslatedComponent {
 
     private val beingPushed: MutableSet<String> = mutableSetOf()
 
+    private val slimeWorldRegistry: SlimeWorldRegistry by inject()
+
     private val configProvider: ConfigurationProvider by inject()
     private val s3WorldSynchronizer: S3WorldSynchronizer by inject()
 
@@ -36,7 +40,7 @@ public class PushMapCommand : TranslatedComponent {
     @Subcommand("scope")
     @AutoComplete("@pushableWorlds")
     private fun sendScope(sender: Player, world: String) {
-        val scopeDirectory = configProvider.getOrLoad("build_server/scoped_worlds.yml").getString(world)
+        val scopeDirectory = configProvider.getOrLoad("build_server/scoped_worlds.yml").getString("$world.scope")
 
         if (scopeDirectory == null) {
             sender.sendTranslated("maps.error.not_scoped")
@@ -64,7 +68,10 @@ public class PushMapCommand : TranslatedComponent {
             return
         }
 
-        val scopeDirectory = configProvider.getOrLoad("build_server/scoped_worlds.yml").getString(world)
+        val scopedWorldsConfig = configProvider.getOrLoad("build_server/scoped_worlds.yml")
+
+        val isSlime = scopedWorldsConfig.getBoolean("$world.slime", false)
+        val scopeDirectory = scopedWorldsConfig.getString("$world.scope")
 
         if (scopeDirectory == null) {
             sender.sendTranslated("maps.error.not_scoped")
@@ -79,6 +86,20 @@ public class PushMapCommand : TranslatedComponent {
         // Save the world with flush before the push!
         s3WorldSynchronizer.saveWorldWithFlush(bukkitWorld)
 
+        val oldLocations = bukkitWorld.players.associateWith { it.location }
+
+        // World has to be unloaded before importing it!
+        if (isSlime) {
+            slimeWorldRegistry.slimeWorldContainer.resolve("$world.slime").delete()
+            bukkitWorld.players.forEach { it.teleport(Bukkit.getWorld("world")!!.spawnLocation) }
+            Bukkit.unloadWorld(world, true)
+
+            sender.sendTranslated("maps.temporary_teleport") {
+                parsed("map", world)
+                parsed("scope", scopeDirectory)
+            }
+        }
+
         sender.sendTranslated("maps.pushing") {
             parsed("map", world)
             parsed("scope", scopeDirectory)
@@ -88,33 +109,56 @@ public class PushMapCommand : TranslatedComponent {
 
         beingPushed += world
 
-        object : BukkitRunnable() {
-            override fun run() {
-                try {
-                    s3WorldSynchronizer.uploadWorld(bukkitWorld, scopeDirectory)
+        Bukkit.getScheduler().runTaskAsynchronously(ThankmasBuildServer.instance(), Runnable {
+            try {
+                if (isSlime) {
+                    val slimePaperAPI = AdvancedSlimePaperAPI.instance()
 
-                    object : BukkitRunnable() {
-                        override fun run() {
-                            sender.sendTranslated("maps.success") {
-                                parsed("map", world)
-                                parsed("scope", scopeDirectory)
-                            }
+                    // Save SlimeWorld in memory!
+                    val slimeWorld = slimePaperAPI.readVanillaWorld(
+                        Bukkit.getWorldContainer().resolve(world),
+                        world,
+                        slimeWorldRegistry.defaultSlimeLoader
+                    )
 
-                            beingPushed -= world
-                            logger.info("Push of map $scopeDirectory has succeeded!")
-                        }
-                    }.runTask(ThankmasBuildServer.instance())
-                } catch (exception: S3Exception) {
-                    sender.sendTranslated("maps.error.other") {
+                    // Save into a file!
+                    slimePaperAPI.saveWorld(slimeWorld)
+
+                    // Upload the slime file!
+                    s3WorldSynchronizer.uploadFile(
+                        slimeWorldRegistry.slimeWorldContainer.resolve("$world.slime"),
+                        scopeDirectory
+                    )
+                } else s3WorldSynchronizer.uploadWorld(bukkitWorld, scopeDirectory)
+
+                Bukkit.getScheduler().runTask(ThankmasBuildServer.instance(), Runnable {
+                    sender.sendTranslated("maps.success") {
                         parsed("map", world)
                         parsed("scope", scopeDirectory)
                     }
 
+                    val newWorld = Bukkit.createWorld(WorldCreator(world))
+
+                    // Teleport players back!
+                    oldLocations.forEach { (player, location) ->
+                        location.world = newWorld
+                        if (player.isOnline) player.teleport(location)
+                    }
+
                     beingPushed -= world
-                    exception.printStackTrace()
+                    logger.info("Push of map $scopeDirectory has succeeded!")
+                })
+
+            } catch (exception: S3Exception) {
+                sender.sendTranslated("maps.error.other") {
+                    parsed("map", world)
+                    parsed("scope", scopeDirectory)
                 }
+
+                beingPushed -= world
+                exception.printStackTrace()
             }
-        }.runTaskAsynchronously(ThankmasBuildServer.instance())
+        })
     }
 
 }
