@@ -137,12 +137,14 @@ public class PushMapCommand : TranslatedComponent {
                         parsed("scope", scopeDirectory)
                     }
 
-                    val newWorld = Bukkit.createWorld(WorldCreator(world))
+                    if (isSlime) {
+                        val newWorld = Bukkit.createWorld(WorldCreator(world))
 
-                    // Teleport players back!
-                    oldLocations.forEach { (player, location) ->
-                        location.world = newWorld
-                        if (player.isOnline) player.teleport(location)
+                        // Teleport players back!
+                        oldLocations.forEach { (player, location) ->
+                            location.world = newWorld
+                            if (player.isOnline) player.teleport(location)
+                        }
                     }
 
                     beingPushed -= world
