@@ -15,6 +15,8 @@ dependencies {
     compileOnly(libs.aswm)
     compileOnly(libs.aswm.loaders)
 
+    compileOnly(files("C:/Users/hugov/IdeaProjects/thankmas/common-paper/libs/PaperPolar.jar"))
+
     // Work on a paper specific library!
     implementation(project(":common-paper"))
 }

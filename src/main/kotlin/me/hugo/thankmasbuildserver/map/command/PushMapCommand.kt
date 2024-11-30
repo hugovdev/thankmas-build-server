@@ -1,19 +1,18 @@
-package me.hugo.thankmasbuildserver.command
+package me.hugo.thankmasbuildserver.map.command
 
-import com.infernalsuite.aswm.api.AdvancedSlimePaperAPI
 import dev.kezz.miniphrase.audience.sendTranslated
 import me.hugo.thankmas.config.ConfigurationProvider
+import me.hugo.thankmas.config.enum
 import me.hugo.thankmas.lang.TranslatedComponent
 import me.hugo.thankmas.world.SlimeWorldRegistry
+import me.hugo.thankmas.world.WorldFormat
 import me.hugo.thankmas.world.s3.S3WorldSynchronizer
 import me.hugo.thankmasbuildserver.ThankmasBuildServer
 import org.bukkit.Bukkit
-import org.bukkit.WorldCreator
 import org.bukkit.entity.Player
 import org.koin.core.component.inject
 import revxrsal.commands.annotation.*
 import revxrsal.commands.bukkit.annotation.CommandPermission
-import software.amazon.awssdk.services.s3.model.S3Exception
 
 /**
  * Command that allows players to push a map to the GitHub scopes
@@ -68,10 +67,9 @@ public class PushMapCommand : TranslatedComponent {
             return
         }
 
-        val scopedWorldsConfig = configProvider.getOrLoad("build_server/scoped_worlds.yml")
+        val worldConfig = configProvider.getOrLoad("build_server/scoped_worlds.yml")
 
-        val isSlime = scopedWorldsConfig.getBoolean("$world.slime", false)
-        val scopeDirectory = scopedWorldsConfig.getString("$world.scope")
+        val scopeDirectory = worldConfig.getString("$world.scope")
 
         if (scopeDirectory == null) {
             sender.sendTranslated("maps.error.not_scoped")
@@ -86,19 +84,7 @@ public class PushMapCommand : TranslatedComponent {
         // Save the world with flush before the push!
         s3WorldSynchronizer.saveWorldWithFlush(bukkitWorld)
 
-        val oldLocations = bukkitWorld.players.associateWith { it.location }
-
-        // World has to be unloaded before importing it!
-        if (isSlime) {
-            slimeWorldRegistry.slimeWorldContainer.resolve("$world.slime").delete()
-            bukkitWorld.players.forEach { it.teleport(Bukkit.getWorld("world")!!.spawnLocation) }
-            Bukkit.unloadWorld(world, true)
-
-            sender.sendTranslated("maps.temporary_teleport") {
-                parsed("map", world)
-                parsed("scope", scopeDirectory)
-            }
-        }
+        beingPushed += world
 
         sender.sendTranslated("maps.pushing") {
             parsed("map", world)
@@ -107,60 +93,25 @@ public class PushMapCommand : TranslatedComponent {
 
         logger.info("Started pushing the map $world to $scopeDirectory.")
 
-        beingPushed += world
+        worldConfig.enum<WorldFormat>("$world.format").pushWorld(
+            sender, bukkitWorld, scopeDirectory, s3WorldSynchronizer, worldConfig,
+            onSuccess = {
+                sender.sendTranslated("maps.success") {
+                    parsed("map", world)
+                    parsed("scope", scopeDirectory)
+                }
 
-        Bukkit.getScheduler().runTaskAsynchronously(ThankmasBuildServer.instance(), Runnable {
-            try {
-                if (isSlime) {
-                    val slimePaperAPI = AdvancedSlimePaperAPI.instance()
-
-                    // Save SlimeWorld in memory!
-                    val slimeWorld = slimePaperAPI.readVanillaWorld(
-                        Bukkit.getWorldContainer().resolve(world),
-                        world,
-                        slimeWorldRegistry.defaultSlimeLoader
-                    )
-
-                    // Save into a file!
-                    slimePaperAPI.saveWorld(slimeWorld)
-
-                    // Upload the slime file!
-                    s3WorldSynchronizer.uploadFile(
-                        slimeWorldRegistry.slimeWorldContainer.resolve("$world.slime"),
-                        scopeDirectory
-                    )
-                } else s3WorldSynchronizer.uploadWorld(bukkitWorld, scopeDirectory)
-
-                Bukkit.getScheduler().runTask(ThankmasBuildServer.instance(), Runnable {
-                    sender.sendTranslated("maps.success") {
-                        parsed("map", world)
-                        parsed("scope", scopeDirectory)
-                    }
-
-                    if (isSlime) {
-                        val newWorld = Bukkit.createWorld(WorldCreator(world))
-
-                        // Teleport players back!
-                        oldLocations.forEach { (player, location) ->
-                            location.world = newWorld
-                            if (player.isOnline) player.teleport(location)
-                        }
-                    }
-
-                    beingPushed -= world
-                    logger.info("Push of map $scopeDirectory has succeeded!")
-                })
-
-            } catch (exception: S3Exception) {
+                beingPushed -= world
+                logger.info("Push of map $scopeDirectory has succeeded!")
+            },
+            onFailure = {
                 sender.sendTranslated("maps.error.other") {
                     parsed("map", world)
                     parsed("scope", scopeDirectory)
                 }
 
                 beingPushed -= world
-                exception.printStackTrace()
-            }
-        })
+            })
     }
 
 }

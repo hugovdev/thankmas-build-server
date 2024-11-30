@@ -1,8 +1,8 @@
 package me.hugo.thankmasbuildserver
 
 import me.hugo.thankmas.SimpleThankmasPlugin
-import me.hugo.thankmasbuildserver.command.PushMapCommand
 import me.hugo.thankmasbuildserver.listener.DripleafControl
+import me.hugo.thankmasbuildserver.map.command.PushMapCommand
 import org.bukkit.Bukkit
 import revxrsal.commands.bukkit.BukkitCommandHandler
 import revxrsal.commands.ktx.SuspendFunctionsSupport
