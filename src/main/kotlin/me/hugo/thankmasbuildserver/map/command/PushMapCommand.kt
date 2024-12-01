@@ -4,8 +4,8 @@ import dev.kezz.miniphrase.audience.sendTranslated
 import me.hugo.thankmas.config.ConfigurationProvider
 import me.hugo.thankmas.config.enum
 import me.hugo.thankmas.lang.TranslatedComponent
-import me.hugo.thankmas.world.SlimeWorldRegistry
 import me.hugo.thankmas.world.WorldFormat
+import me.hugo.thankmas.world.registry.SlimeWorldRegistry
 import me.hugo.thankmas.world.s3.S3WorldSynchronizer
 import me.hugo.thankmasbuildserver.ThankmasBuildServer
 import org.bukkit.Bukkit
